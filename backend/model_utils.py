@@ -11,6 +11,7 @@ into a standalone module the FastAPI backend can import.
 import os
 import io
 import base64
+import urllib.request
 
 import cv2
 import numpy as np
@@ -32,6 +33,9 @@ import matplotlib.pyplot as plt
 
 # ── CONFIG ──────────────────────────────────────────────────────────
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "saved_model", "best_road_model.pt")
+# Set the MODEL_DOWNLOAD_URL environment variable on Render to a direct download URL
+# for your .pt file (e.g., from Google Drive or Hugging Face).
+MODEL_DOWNLOAD_URL = os.environ.get("MODEL_DOWNLOAD_URL", "")
 IMAGE_SIZE = 512
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -56,17 +60,29 @@ def get_model():
     return model.to(DEVICE)
 
 
+def _maybe_download_model():
+    """Downloads the model checkpoint if it is missing and MODEL_DOWNLOAD_URL is set."""
+    if os.path.exists(MODEL_PATH):
+        return
+    if not MODEL_DOWNLOAD_URL:
+        raise FileNotFoundError(
+            f"Model checkpoint not found at {MODEL_PATH}. "
+            f"Either copy best_road_model.pt into backend/saved_model/ "
+            f"or set the MODEL_DOWNLOAD_URL environment variable."
+        )
+    print(f"Downloading model from {MODEL_DOWNLOAD_URL} ...")
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    urllib.request.urlretrieve(MODEL_DOWNLOAD_URL, MODEL_PATH)
+    print(f"Model downloaded to {MODEL_PATH}")
+
+
 def load_model():
     """Loads the trained checkpoint once. Call this at server startup."""
     global _model
     if _model is not None:
         return _model
 
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError(
-            f"Model checkpoint not found at {MODEL_PATH}. "
-            f"Copy your best_road_model.pt from Google Drive into backend/saved_model/."
-        )
+    _maybe_download_model()
 
     model = get_model()
     checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)

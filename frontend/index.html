@@ -883,7 +883,12 @@
   </div>
 
   <script>
-    const API_BASE = "http://localhost:8000";
+    // Auto-detect backend URL:
+    // - When running locally, points to localhost:8000
+    // - When hosted (e.g., on Vercel), update RENDER_BACKEND_URL below with your Render deployment URL
+    const RENDER_BACKEND_URL = "https://YOUR-APP-NAME.onrender.com"; // <-- replace this after deploying backend to Render
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const API_BASE = isLocal ? "http://localhost:8000" : RENDER_BACKEND_URL;
 
     // ---------- cursor spotlight reveal ----------
     (function() {
