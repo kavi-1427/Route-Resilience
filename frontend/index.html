@@ -1067,6 +1067,10 @@
         }
         const data = await res.json();
 
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
         document.getElementById("resultImg").src = data.result_image;
         const s = data.stats;
         document.getElementById("statGrid").innerHTML = `
