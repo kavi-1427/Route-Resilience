@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+
+torch
+torchvision
+segmentation-models-pytorch
+albumentations
+
+opencv-python-headless
+scikit-image
+networkx
+numpy
+Pillow
+matplotlib

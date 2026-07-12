@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Resilience — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08090a;
+      --panel: #ffffff;
+      --fg: #f4f3ef;
+      --muted: #8a8f88;
+      --crit: #ff4433;
+      --safe: #4ade80;
+      --amber: #ffb84d;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .serif-em {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      color: var(--crit);
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.035);
+      backdrop-filter: blur(14px);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* ---- sidebar ---- */
+    .sidebar {
+      width: 230px;
+      flex: none;
+      padding: 22px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 8px 10px 22px;
+    }
+
+    .brand .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: var(--crit);
+      box-shadow: 0 0 10px rgba(255, 68, 51, .8);
+    }
+
+    .navitem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: .15s;
+    }
+
+    .navitem:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--fg);
+    }
+
+    .navitem.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--fg);
+    }
+
+    .navitem .ico {
+      width: 16px;
+      text-align: center;
+      opacity: .8;
+    }
+
+    /* ---- main ---- */
+    .main {
+      flex: 1;
+      padding: 26px 32px;
+      max-width: 1400px;
+      overflow-x: hidden;
+    }
+
+    #panel-home {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+
+    #panel-home h1 {
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff, #8a8f88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #panel-home p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    
+    #panel-home .badge {
+      margin-top: 32px;
+      display: inline-block;
+      font-size: 13px;
+      padding: 8px 16px;
+    }
+
+    .badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+    }
+
+    .badge.ok {
+      color: var(--safe);
+    }
+
+    .badge.off {
+      color: var(--crit);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 22px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 9, 10, 0.85);
+      padding: 16px 0;
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .tab.active {
+      color: var(--bg);
+      background: var(--fg);
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin-bottom: 0;
+      scroll-snap-align: start;
+      scroll-margin-top: 0;
+      padding-top: 80px;
+      padding-bottom: 40px;
+    }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 10px;
+    }
+
+    /* ---- live demo panel ---- */
+    .uploadbox {
+      padding: 40px;
+      text-align: center;
+      border: 1.5px dashed rgba(255, 255, 255, 0.18);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .uploadbox:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .uploadbox p.big {
+      font-size: 14.5px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .uploadbox p.small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .resultwrap {
+      margin-top: 24px;
+      display: none;
+    }
+
+    .resulthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .downloadbtn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--fg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: .15s;
+    }
+
+    .downloadbtn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .resultwrap img {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .statgrid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .statcard {
+      padding: 16px 18px;
+    }
+
+    .statcard .num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .statcard .lbl {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--crit);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .errbox {
+      padding: 16px 18px;
+      border-radius: 10px;
+      background: rgba(255, 68, 51, 0.1);
+      border: 1px solid rgba(255, 68, 51, 0.3);
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    /* ---- precomputed gallery ---- */
+    .filterrow {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .filterbtn {
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .filterbtn.active {
+      background: var(--fg);
+      color: var(--bg);
+      font-weight: 600;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .gcard {
+      overflow: hidden;
+    }
+
+    .gcard img {
+      width: 100%;
+      display: block;
+    }
+
+    .gcard .cap {
+      padding: 16px 18px 18px;
+    }
+
+    .gcard .cap h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .gcard .cap p {
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .gcard .cattag {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--crit);
+      margin-bottom: 8px;
+    }
+
+    .setupnote {
+      padding: 16px 18px;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 20px;
+    }
+
+    .setupnote code {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 11.5px;
+    }
+
+    /* ---- history ---- */
+    .historysection {
+      margin-top: 28px;
+    }
+
+    .historysection h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .historygrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .historyitem {
+      cursor: pointer;
+      overflow: hidden;
+      border-radius: 10px;
+      transition: .15s;
+    }
+
+    .historyitem:hover {
+      transform: scale(1.05);
+    }
+
+    .historyitem img {
+      width: 100%;
+      display: block;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .historyitem .cap {
+      padding: 8px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @keyframes heroZoom {
+      0%   { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .hero {
+      position: fixed;
+      inset: 0;
+      background: url('https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260609_195923_b0ba8ace-1d1d-4f2c-9a28-1ab84b330680.png&w=1280&q=85') center/cover no-repeat;
+      z-index: -2;
+      animation: heroZoom 1.8s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+
+    .reveal-layer {
+      position: fixed;
+      inset: 0;
+      background: url('https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260609_201152_bba90a12-bf12-459f-91f0-51f237dbaf3b.png&w=1280&q=85') center/cover no-repeat;
+      pointer-events: none;
+      z-index: -1;
+      mask-size: 100% 100%;
+      -webkit-mask-size: 100% 100%;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero { animation: none; }
+    }
+
+    /* ---- mobile menu toggle ---- */
+    .mobile-menu-btn {
+      display: none;
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 200;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(8, 9, 10, 0.8);
+      backdrop-filter: blur(14px);
+      color: var(--fg);
+      font-size: 20px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 149;
+    }
+
+    /* =============== RESPONSIVE =============== */
+
+    /* ---- Tablets & small laptops (≤1024px) ---- */
+    @media (max-width: 1024px) {
+      .main {
+        padding: 22px 24px;
+      }
+
+      .statgrid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #panel-home h1 {
+        font-size: 54px;
+      }
+
+      #panel-home p {
+        font-size: 16px;
+        max-width: 480px;
+      }
+    }
+
+    /* ---- Mobile (≤768px) ---- */
+    @media (max-width: 768px) {
+      html {
+        scroll-snap-type: y proximity;
+      }
+
+      .mobile-menu-btn {
+        display: flex;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 150;
+        width: 240px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        border-radius: 0 !important;
+        background: rgba(8, 9, 10, 0.95) !important;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+
+      .layout {
+        flex-direction: column;
+      }
+
+      .main {
+        padding: 16px 16px;
+        padding-top: 60px;
+      }
+
+      .tabs {
+        gap: 6px;
+        padding: 12px 0;
+      }
+
+      .tab {
+        padding: 7px 14px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      #panel-home h1 {
+        font-size: 42px;
+      }
+
+      #panel-home p {
+        font-size: 14px;
+        max-width: 320px;
+      }
+
+      #panel-home .badge {
+        font-size: 11px;
+        padding: 6px 12px;
+      }
+
+      .panel {
+        min-height: auto;
+        min-height: auto;
+        padding-top: 40px;
+        padding-bottom: 30px;
+        scroll-snap-align: start;
+      }
+
+      #panel-home {
+        min-height: 70vh;
+        min-height: 70dvh;
+      }
+
+      .panel-title {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+
+      .uploadbox {
+        padding: 24px 16px;
+      }
+
+      .uploadbox p.big {
+        font-size: 13px;
+      }
+
+      .statgrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .statcard {
+        padding: 12px 14px;
+      }
+
+      .statcard .num {
+        font-size: 16px;
+      }
+
+      .statcard .lbl {
+        font-size: 10px;
+      }
+
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+
+      .filterrow {
+        flex-wrap: wrap;
+      }
+
+      .historygrid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      }
+
+      .historyitem img {
+        height: 80px;
+      }
+
+      .errbox {
+        font-size: 12px;
+      }
+    }
+
+    /* ---- Small phones (≤480px) ---- */
+    @media (max-width: 480px) {
+      #panel-home h1 {
+        font-size: 34px;
+      }
+
+      #panel-home p {
+        font-size: 13px;
+      }
+
+      .panel-title {
+        font-size: 16px;
+      }
+
+      .statgrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .tab {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hero"></div>
+  <div class="reveal-layer" id="revealLayer"></div>
+  <canvas id="spotlightCanvas" style="position:absolute;inset:0;pointer-events:none;display:none;"></canvas>
+
+  <!-- Mobile menu button -->
+  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="layout">
+    <!-- ============= SIDEBAR ============= -->
+    <div class="sidebar glass" style="border-radius:0;">
+      <div class="brand"><span class="dot"></span>Route Resilience</div>
+      <div class="navitem active" data-tab="home"><span class="ico">🏠</span> Home</div>
+      <div class="navitem" data-tab="live"><span class="ico">▲</span> Live Demo</div>
+      <div class="navitem" data-tab="tech"><span class="ico">⚙</span> Technology Stack</div>
+      <div class="navitem" data-tab="precomputed"><span class="ico">▦</span> Saved Results</div>
+      <div class="navitem" data-tab="about"><span class="ico">i</span> About Pipeline</div>
+    </div>
+
+    <!-- ============= MAIN ============= -->
+    <div class="main">
+
+      <!-- ============= HOME PANEL ============= -->
+      <div class="panel active" id="panel-home">
+        <h1>Route Resilience</h1>
+        <p>Occlusion-robust road extraction &amp; graph criticality — ISRO Hackathon 2026</p>
+        <div class="badge mono" id="statusBadge">checking backend…</div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="home">Home</div>
+        <div class="tab" data-tab="live">Live Demo</div>
+        <div class="tab" data-tab="tech">Technology Stack</div>
+        <div class="tab" data-tab="precomputed">Saved Results</div>
+        <div class="tab" data-tab="about">About</div>
+      </div>
+
+      <!-- ============= LIVE DEMO PANEL ============= -->
+      <div class="panel" id="panel-live">
+        <h2 class="panel-title">Live Demo</h2>
+        <div class="uploadbox glass" id="uploadBox">
+          <p class="big">Drop a satellite tile here, or click to choose a file</p>
+          <p class="small">Runs your trained U-Net + graph criticality pipeline in real time</p>
+          <input type="file" id="fileInput" accept="image/*" />
+        </div>
+
+        <div class="spinner" id="spinner" style="display:none;"></div>
+        <div class="errbox" id="errBox"></div>
+
+        <div class="resultwrap" id="resultWrap">
+          <div class="resulthead">
+            <h4 style="font-size:14px; font-weight:600;">Prediction Result</h4>
+            <button class="downloadbtn" id="downloadBtn" onclick="downloadResult()">⬇ Download</button>
+          </div>
+          <img id="resultImg" src="" alt="Pipeline result" />
+          <div class="statgrid" id="statGrid"></div>
+        </div>
+
+        <div class="historysection" id="historySection" style="display:none;">
+          <h4>Search History</h4>
+          <div class="historygrid" id="historyGrid"></div>
+        </div>
+      </div>
+
+      <!-- ============= TECH STACK PANEL ============= -->
+      <div class="panel" id="panel-tech">
+        <h2 class="panel-title">Technology Stack</h2>
+        <div class="statgrid" style="margin-top:0; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+          <div class="statcard glass" style="display: flex; flex-direction: column; gap: 8px;">
+             <h3 style="font-size:18px; font-weight:600; color: var(--crit);">Frontend Dashboard</h3>
+             <p style="font-size:13px; color:var(--muted); line-height:1.6;">
+               • <b>HTML5 & CSS3</b>: Built using semantic HTML and custom CSS variables for a high-fidelity glassmorphic dark theme.<br>
+               • <b>Vanilla JavaScript</b>: Handles asynchronous drag-and-drop file uploads, base64 image parsing, and dynamic status updates without heavy framework overhead.<br>
+               • <b>Interactive Canvas Masking</b>: Implements a double-layer mask using an HTML5 Canvas and dynamic CSS <code>mask-image</code> to generate the cursor-following spotlight reveal effect.<br>
+               • <b>Intersection Observer</b>: Synchronizes the active state of navigation tabs dynamically based on the current scroll viewport.
+             </p>
+          </div>
+          <div class="statcard glass" style="display: flex; flex-direction: column; gap: 8px;">
+             <h3 style="font-size:18px; font-weight:600; color: var(--crit);">Backend API</h3>
+             <p style="font-size:13px; color:var(--muted); line-height:1.6;">
+               • <b>FastAPI</b>: High-performance Python web framework used to expose endpoints for real-time model inference and metadata retrieval.<br>
+               • <b>Uvicorn</b>: Lightning-fast ASGI server implementation used to run the FastAPI application under local environment conditions.<br>
+               • <b>CORS Middleware</b>: Configured to support seamless frontend-backend communication across ports.<br>
+               • <b>JSON Manifest System</b>: Serves structured precomputed Colab results (image assets and precalculated graph metrics) using flat JSON files.
+             </p>
+          </div>
+          <div class="statcard glass" style="display: flex; flex-direction: column; gap: 8px;">
+             <h3 style="font-size:18px; font-weight:600; color: var(--crit);">Deep Learning Model</h3>
+             <p style="font-size:13px; color:var(--muted); line-height:1.6;">
+               • <b>PyTorch</b>: Underlying ML library powering local model loading, tensor manipulation, and GPU/CPU inference.<br>
+               • <b>U-Net Architecture</b>: State-of-the-art road segmentation network designed with a ResNet-34 encoder pretrained on ImageNet for extracting road masks from satellite imagery.<br>
+               • <b>Segmentation Models PyTorch (SMP)</b>: Library utilized for initializing and configuring the model framework during Colab training.<br>
+               • <b>Inference Optimization</b>: Features CPU fallback for systems without CUDA capability, executing in just a few seconds per tile.
+             </p>
+          </div>
+          <div class="statcard glass" style="display: flex; flex-direction: column; gap: 8px;">
+             <h3 style="font-size:18px; font-weight:600; color: var(--crit);">Graph & Image Processing</h3>
+             <p style="font-size:13px; color:var(--muted); line-height:1.6;">
+               • <b>NetworkX</b>: Builds topological road networks (intersections as nodes, road centerlines as edges) to run centrality calculations.<br>
+               • <b>Scikit-Image (skimage)</b>: Performs skeletonization (thinning segmented masks to 1px wide lines) and morphological operations like closing to heal gaps caused by tree cover.<br>
+               • <b>Vulnerability Scoring</b>: Calculates custom road segment criticality by combining edge betweenness centrality and global connectivity loss metrics.<br>
+               • <b>OpenCV</b>: Handles image color conversion and image generation before sending the finalized multi-panel comparison visualization to the client.
+             </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============= PRECOMPUTED PANEL ============= -->
+      <div class="panel" id="panel-precomputed">
+        <h2 class="panel-title">Saved Results</h2>
+        <div class="filterrow" id="filterRow">
+          <div class="filterbtn active" data-cat="all">All</div>
+          <div class="filterbtn" data-cat="criticality">Criticality</div>
+          <div class="filterbtn" data-cat="fusion">Fusion</div>
+          <div class="filterbtn" data-cat="limitations">Limitations</div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+
+      <!-- ============= ABOUT PANEL ============= -->
+      <div class="panel" id="panel-about">
+        <h2 class="panel-title">About Pipeline</h2>
+        <div class="glass" style="padding:26px 28px; max-width:900px;">
+          <h1 style="font-size:24px; margin-bottom:14px; color:var(--fg);">Route Resilience</h1>
+          <p style="font-size:14px; color:var(--muted); line-height:1.8;">
+            <strong>Occlusion‑Robust Road Extraction &amp; Graph‑Theoretic Criticality Analysis for Urban Mobility</strong><br>
+            Bharatiya Antariksh Hackathon 2026 — ISRO, Problem Statement 4
+          </p>
+          <h2 style="font-size:18px; margin-top:20px; color:var(--fg);">Overview</h2>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            Route Resilience is an end‑to‑end pipeline that turns raw satellite imagery into a ranked, resilience‑aware road network. It addresses two problems that are usually treated separately in remote‑sensing literature but are, in practice, the same problem seen from two ends: extraction quality determines whether the resulting road graph is even topologically correct, and graph analysis determines which of the extracted roads actually matter for keeping a city moving.
+          </p>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">The problem, in detail</h3>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            <strong>Failure mode one — occlusion.</strong> Optical satellite sensors record whatever is in front of them, and quite often that is not the road surface at all. Cloud cover, shadows, and dense tree canopy physically block the sensor's view. A segmentation model trained purely on visible pixels cannot distinguish “there is no road here” from “there is a road here, but I cannot see it”. The result is a road mask riddled with false gaps.
+          </p>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            <strong>Failure mode two — undifferentiated importance.</strong> Even a perfectly extracted road network treats every segment as interchangeable unless you explicitly analyze its role. In reality, a small number of arterial roads and bridges carry a disproportionate share of shortest paths; losing one can isolate entire districts.
+          </p>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">System architecture</h3>
+          <ul style="font-size:13.5px; color:var(--muted); line-height:1.7; margin-left:20px;">
+            <li><strong>Stage 1 — Segmentation.</strong> U‑Net with ResNet34 encoder produces per‑pixel road probability maps.</li>
+            <li><strong>Stage 2 — Occlusion recovery.</strong> Fusion with a clean reference pass fills gaps, followed by morphological closing.</li>
+            <li><strong>Stage 3 — Skeletonization.</strong> Thins the mask to 1‑pixel centerlines.</li>
+            <li><strong>Stage 4 — Graph construction.</strong> Builds an 8‑connected pixel graph, collapses degree‑2 nodes.</li>
+            <li><strong>Stage 5 — Criticality scoring.</strong> Combines edge betweenness centrality (70 %) and vulnerability (30 %) into a 0‑1 score.</li>
+          </ul>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">Training data</h3>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            The model is trained on 6,400 combined tiles from DeepGlobe Road Extraction and Massachusetts Roads datasets, covering urban, suburban, and rural terrain.
+          </p>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">What we validated — including where it struggles</h3>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            On clear urban roads the pipeline restores missing pixels and maintains connectivity. In dense canopy the model misses many faint roads; lowering the confidence threshold does not recover them, indicating a data‑scarcity limitation.
+          </p>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">Why extraction quality and graph analysis cannot be separated</h3>
+          <p style="font-size:13.5px; color:var(--muted); line-height:1.8;">
+            Fragmented extraction yields disconnected graph components, making centrality metrics meaningless and potentially misleading about road importance.
+          </p>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">Roadmap</h3>
+          <ul style="font-size:13.5px; color:var(--muted); line-height:1.7; margin-left:20px;">
+            <li>Collect targeted rural and forest road data to improve unpaved‑road detection.</li>
+            <li>Integrate SAR imagery for canopy‑penetrating observations.</li>
+          </ul>
+          <h3 style="font-size:16px; margin-top:18px; color:var(--fg);">Built with</h3>
+          <ul style="font-size:13.5px; color:var(--muted); line-height:1.7; margin-left:20px;">
+            <li>PyTorch, segmentation‑models‑pytorch (U‑Net / ResNet34)</li>
+            <li>OpenCV, scikit‑image, NetworkX</li>
+            <li>FastAPI backend</li>
+            <li>Vanilla HTML/JS dashboard</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    // ---------- cursor spotlight reveal ----------
+    (function() {
+      const SPOTLIGHT_R = 260;
+      const revealEl = document.getElementById('revealLayer');
+      const canvas = document.getElementById('spotlightCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const mouse = { x: -999, y: -999 };
+      const smooth = { x: -999, y: -999 };
+      let rafId = null;
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      document.addEventListener('mousemove', function(e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      function loop() {
+        smooth.x += (mouse.x - smooth.x) * 0.1;
+        smooth.y += (mouse.y - smooth.y) * 0.1;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const grad = ctx.createRadialGradient(
+          smooth.x, smooth.y, 0,
+          smooth.x, smooth.y, SPOTLIGHT_R
+        );
+        grad.addColorStop(0,    'rgba(255,255,255,1)');
+        grad.addColorStop(0.4,  'rgba(255,255,255,1)');
+        grad.addColorStop(0.6,  'rgba(255,255,255,0.75)');
+        grad.addColorStop(0.75, 'rgba(255,255,255,0.4)');
+        grad.addColorStop(0.88, 'rgba(255,255,255,0.12)');
+        grad.addColorStop(1,    'rgba(255,255,255,0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(smooth.x, smooth.y, SPOTLIGHT_R, 0, Math.PI * 2);
+        ctx.fill();
+
+        const maskUrl = canvas.toDataURL();
+        revealEl.style.maskImage = 'url(' + maskUrl + ')';
+        revealEl.style.webkitMaskImage = 'url(' + maskUrl + ')';
+
+        rafId = requestAnimationFrame(loop);
+      }
+      rafId = requestAnimationFrame(loop);
+    })();
+
+    // ---------- section scrolling (both sidebar and top tabs control scrolling) ----------
+    function scrollToTab(tabName) {
+      document.getElementById("panel-" + tabName).scrollIntoView({ behavior: 'smooth' });
+    }
+    document.querySelectorAll(".navitem, .tab").forEach(el => {
+      el.addEventListener("click", () => scrollToTab(el.dataset.tab));
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const tabName = entry.target.id.replace('panel-', '');
+          document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.tab === tabName));
+          document.querySelectorAll(".tab").forEach(el => el.classList.toggle("active", el.dataset.tab === tabName));
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll(".panel").forEach(panel => observer.observe(panel));
+
+    // ---------- backend health check ----------
+    async function checkHealth() {
+      const badge = document.getElementById("statusBadge");
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        const data = await res.json();
+        if (data.model_loaded) {
+          badge.textContent = "● model loaded — live demo ready";
+          badge.classList.add("ok");
+        } else {
+          badge.textContent = "● backend up, model not loaded";
+          badge.classList.add("off");
+        }
+      } catch (e) {
+        badge.textContent = "● backend not running (see setup note)";
+        badge.classList.add("off");
+      }
+    }
+    checkHealth();
+
+    // ---------- LIVE DEMO: upload + predict ----------
+    const uploadBox = document.getElementById("uploadBox");
+    const fileInput = document.getElementById("fileInput");
+    let searchHistory = JSON.parse(localStorage.getItem("searchHistory")) || [];
+
+    function saveToHistory(resultImage, stats, fileName) {
+      const historyItem = {
+        id: Date.now(),
+        resultImage: resultImage,
+        stats: stats,
+        fileName: fileName,
+        timestamp: new Date().toLocaleString()
+      };
+      searchHistory.unshift(historyItem);
+      if (searchHistory.length > 10) searchHistory.pop();
+      localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const historyGrid = document.getElementById("historyGrid");
+      const historySection = document.getElementById("historySection");
+      if (searchHistory.length === 0) {
+        historySection.style.display = "none";
+        return;
+      }
+      historySection.style.display = "block";
+      historyGrid.innerHTML = searchHistory.map(item => `
+    <div class="historyitem glass" onclick="loadFromHistory(${item.id})">
+      <img src="${item.resultImage}" alt="${item.fileName}" />
+      <div class="cap">${item.fileName.substring(0, 20)}</div>
+    </div>
+  `).join("");
+    }
+
+    function loadFromHistory(id) {
+      const item = searchHistory.find(h => h.id === id);
+      if (item) {
+        document.getElementById("resultImg").src = item.resultImage;
+        const s = item.stats;
+        document.getElementById("statGrid").innerHTML = `
+      <div class="statcard glass"><div class="num">${s.nodes}</div><div class="lbl">Intersections</div></div>
+      <div class="statcard glass"><div class="num">${s.edges}</div><div class="lbl">Road segments</div></div>
+      <div class="statcard glass"><div class="num">${s.connected_components}</div><div class="lbl">Connected components</div></div>
+      <div class="statcard glass"><div class="num">${s.max_criticality.toFixed(2)}</div><div class="lbl">Max criticality score</div></div>
+    `;
+        document.getElementById("resultWrap").style.display = "block";
+      }
+    }
+
+    renderHistory();
+
+    uploadBox.addEventListener("click", () => fileInput.click());
+    uploadBox.addEventListener("dragleave", () => { uploadBox.style.borderColor = "rgba(255,255,255,0.18)"; });
+    uploadBox.addEventListener("dragover", e => { e.preventDefault(); uploadBox.style.borderColor = "rgba(255,255,255,0.4)"; });
+    uploadBox.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadBox.style.borderColor = "rgba(255,255,255,0.18)";
+      if (e.dataTransfer.files.length) runPredict(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length) runPredict(fileInput.files[0]);
+    });
+
+    async function runPredict(file) {
+      const spinner = document.getElementById("spinner");
+      const errBox = document.getElementById("errBox");
+      const resultWrap = document.getElementById("resultWrap");
+
+      errBox.style.display = "none";
+      resultWrap.style.display = "none";
+      spinner.style.display = "block";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(`${API_BASE}/predict`, { method: "POST", body: formData });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ detail: "Unknown error" }));
+          throw new Error(errData.detail || `Server returned ${res.status}`);
+        }
+        const data = await res.json();
+
+        document.getElementById("resultImg").src = data.result_image;
+        const s = data.stats;
+        document.getElementById("statGrid").innerHTML = `
+      <div class="statcard glass"><div class="num">${s.nodes}</div><div class="lbl">Intersections</div></div>
+      <div class="statcard glass"><div class="num">${s.edges}</div><div class="lbl">Road segments</div></div>
+      <div class="statcard glass"><div class="num">${s.connected_components}</div><div class="lbl">Connected components</div></div>
+      <div class="statcard glass"><div class="num">${s.max_criticality.toFixed(2)}</div><div class="lbl">Max criticality score</div></div>
+    `;
+        resultWrap.style.display = "block";
+        saveToHistory(data.result_image, s, file.name);
+      } catch (e) {
+        errBox.textContent = "⚠ " + e.message + " — make sure the FastAPI backend is running (see setup note below) and that best_road_model.pt is in backend/saved_model/.";
+        errBox.style.display = "block";
+      } finally {
+        spinner.style.display = "none";
+      }
+    }
+
+    function downloadResult() {
+      const resultImg = document.getElementById("resultImg");
+      if (!resultImg.src) {
+        alert("No result to download yet. Run a prediction first.");
+        return;
+      }
+      const link = document.createElement("a");
+      link.href = resultImg.src;
+      link.download = `route-resilience-result-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ---------- PRECOMPUTED: load manifest + render gallery ----------
+    let allItems = [];
+    async function loadPrecomputed() {
+      const gallery = document.getElementById("gallery");
+      try {
+        const res = await fetch(`${API_BASE}/precomputed`);
+        const data = await res.json();
+        allItems = data.items || [];
+        renderGallery("all");
+      } catch (e) {
+        gallery.innerHTML = `<div class="setupnote glass">Couldn't reach the backend at <code>${API_BASE}</code>. Start it with <code>uvicorn main:app --reload</code> from the <code>backend/</code> folder, then refresh this page.</div>`;
+      }
+    }
+
+    function renderGallery(cat) {
+      const gallery = document.getElementById("gallery");
+      const items = cat === "all" ? allItems : allItems.filter(i => i.category === cat);
+      gallery.innerHTML = items.map(item => `
+    <div class="gcard glass">
+      <img src="${API_BASE}${item.image_url}" alt="${item.title}" />
+      <div class="cap">
+        <span class="cattag">${item.category}</span>
+        <h4>${item.title}</h4>
+        <p>${item.description}</p>
+      </div>
+    </div>
+  `).join("");
+    }
+
+    document.querySelectorAll(".filterbtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filterbtn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderGallery(btn.dataset.cat);
+      });
+    });
+
+    // ---------- Mobile Menu Toggle JS ----------
+    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const sidebar = document.querySelector(".sidebar");
+
+    function toggleMobileMenu() {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("open");
+    }
+
+    mobileMenuBtn.addEventListener("click", toggleMobileMenu);
+    sidebarOverlay.addEventListener("click", toggleMobileMenu);
+
+    // Close menu when clicking navitems on mobile
+    document.querySelectorAll(".navitem").forEach(item => {
+      item.addEventListener("click", () => {
+        if (sidebar.classList.contains("open")) {
+          toggleMobileMenu();
+        }
+      });
+    });
+
+    loadPrecomputed();
+  </script>
+</body>
+
+</html>

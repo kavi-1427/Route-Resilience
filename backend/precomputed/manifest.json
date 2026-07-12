@@ -1,0 +1,65 @@
+{
+  "items": [
+    {
+      "id": "full_pipeline",
+      "filename": "full_pipeline_criticality.jpg",
+      "title": "Full pipeline — occlusion recovery to criticality",
+      "description": "The complete pipeline run end to end: the occlusion-recovered road mask, its skeleton, and the resulting criticality analysis overlaid on the source tile. The red segment is the single point of failure for this local network.",
+      "category": "criticality",
+      "stats": {
+        "connected_components": 1,
+        "max_criticality": 0.94
+      }
+    },
+    {
+      "id": "forest_criticality",
+      "filename": "forest_criticality.jpg",
+      "title": "Criticality analysis on forest terrain",
+      "description": "The same criticality pipeline run on a vegetation-heavy tile. Because detection is sparse here, the resulting graph fragments into 7 disconnected components — a direct, honest illustration of why occlusion-robust extraction matters for graph analysis.",
+      "category": "criticality",
+      "stats": {
+        "connected_components": 7
+      }
+    },
+    {
+      "id": "occlusion_pair",
+      "filename": "occlusion_pair.jpg",
+      "title": "Occlusion recovery with clean reference",
+      "description": "Fusing a clean reference pass into an occluded tile to restore the missing road mask.",
+      "category": "fusion",
+      "stats": {}
+    },
+    {
+      "id": "fusion_final",
+      "filename": "fusion_final.jpg",
+      "title": "Final fused road network",
+      "description": "The final continuous road network after morphological closing reconnects the broken segments.",
+      "category": "fusion",
+      "stats": {}
+    },
+    {
+      "id": "confidence_heatmap",
+      "filename": "confidence_heatmap.jpg",
+      "title": "Raw confidence heatmap",
+      "description": "The un-thresholded probabilities from the U-Net model on a challenging tile.",
+      "category": "limitations",
+      "stats": {}
+    },
+    {
+      "id": "threshold_sweep",
+      "filename": "threshold_sweep.jpg",
+      "title": "Confidence threshold sweep",
+      "description": "Sweeping the confidence threshold down from 0.5 to 0.08 reveals that faint unpaved roads are not recovered, indicating a data limitation rather than a tuning issue.",
+      "category": "limitations",
+      "stats": {}
+    },
+    {
+      "id": "forest_baseline",
+      "filename": "forest_baseline.jpg",
+      "title": "Baseline forest extraction",
+      "description": "A baseline extraction on heavy canopy, showing the typical gaps that corrupt downstream graph analysis.",
+      "category": "limitations",
+      "stats": {}
+    }
+  ]
+}
