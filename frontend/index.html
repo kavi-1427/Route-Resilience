@@ -5,6 +5,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Route Resilience — Dashboard</title>
+  
+  <!-- Firebase Configuration for History Persistence -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbFZ644fNoAz5iQDThPYtpo7Tw3DDX3iE",
+      authDomain: "isro-cd077.firebaseapp.com",
+      projectId: "isro-cd077",
+      storageBucket: "isro-cd077.firebasestorage.app",
+      messagingSenderId: "343443527434",
+      appId: "1:343443527434:web:24f39f1f14dd0d90e80cf3"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.query = query;
+    window.orderBy = orderBy;
+    window.limit = limit;
+    
+    if (window.initHistory) {
+      window.initHistory();
+    }
+  </script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -986,21 +1017,49 @@
     // ---------- LIVE DEMO: upload + predict ----------
     const uploadBox = document.getElementById("uploadBox");
     const fileInput = document.getElementById("fileInput");
-    let searchHistory = JSON.parse(localStorage.getItem("searchHistory")) || [];
+    let searchHistory = [];
 
-    function saveToHistory(resultImage, stats, fileName) {
+    window.initHistory = async function() {
+      if (!window.db) return; // Wait for Firebase module to load
+      try {
+        const q = window.query(window.collection(window.db, "searchHistory"), window.orderBy("timestamp", "desc"), window.limit(10));
+        const querySnapshot = await window.getDocs(q);
+        searchHistory = [];
+        querySnapshot.forEach((doc) => {
+          searchHistory.push(doc.data());
+        });
+        renderHistory();
+      } catch (e) {
+        console.error("Error loading history from Firebase:", e);
+      }
+    };
+    
+    // In case this script loads after the module script
+    if (window.db && window.initHistory) {
+      window.initHistory();
+    }
+
+    window.saveToHistory = async function(resultImage, stats, fileName) {
       const historyItem = {
         id: Date.now(),
         resultImage: resultImage,
         stats: stats,
         fileName: fileName,
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toISOString()
       };
+      
+      // Optimistically update UI
       searchHistory.unshift(historyItem);
       if (searchHistory.length > 10) searchHistory.pop();
-      localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
       renderHistory();
-    }
+      
+      // Save to Firebase
+      try {
+        await window.addDoc(window.collection(window.db, "searchHistory"), historyItem);
+      } catch (e) {
+        console.error("Error saving history to Firebase:", e);
+      }
+    };
 
     function renderHistory() {
       const historyGrid = document.getElementById("historyGrid");
@@ -1018,7 +1077,7 @@
   `).join("");
     }
 
-    function loadFromHistory(id) {
+    window.loadFromHistory = function(id) {
       const item = searchHistory.find(h => h.id === id);
       if (item) {
         document.getElementById("resultImg").src = item.resultImage;
@@ -1031,7 +1090,7 @@
     `;
         document.getElementById("resultWrap").style.display = "block";
       }
-    }
+    };
 
     renderHistory();
 
